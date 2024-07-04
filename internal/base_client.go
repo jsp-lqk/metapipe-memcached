@@ -56,6 +56,9 @@ func (c *BaseClient) Stale(key string) (bool, error) {
 func (c *BaseClient) Get(key string) ([]byte, error){
 	ch := c.rawClient.Dispatch([]byte(fmt.Sprintf("mg %s t f v\r\n",key)))
 	r := <-ch
+	if r.Error != nil {
+		fmt.Printf("error getting: %s", r.Error.Error())
+	}
 	return r.Value, nil
 }
 

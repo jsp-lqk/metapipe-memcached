@@ -48,6 +48,7 @@ func (tc *TcpRawClient) Dispatch(r []byte) <-chan Response {
 		}
 		tc.mu.Lock()
 		defer tc.mu.Unlock()
+		tc.deque.PushFront(rq)
 		if _, err := tc.rw.Write(r); err != nil {
 			rc <- Response{
 				Header: nil,
@@ -62,7 +63,6 @@ func (tc *TcpRawClient) Dispatch(r []byte) <-chan Response {
 				Error: err}
 			return
 		}
-		tc.deque.PushFront(rq)
 	}()
 	return rc
 }
@@ -95,7 +95,12 @@ func (tc *TcpRawClient) listen() {
 				fmt.Printf("error reading from server: %s\n", head)
 				panic("error")
 		}
+		tc.mu.Lock()
+		if tc.deque.Len() == 0 {
+			panic(fmt.Sprintf("empty deque for response: %s\n", head))
+		}
 		req := tc.deque.PopBack()
+		tc.mu.Unlock()
 		req.responseChannel <- Response{
 			Header: header,
 			Value: value,
