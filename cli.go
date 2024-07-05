@@ -17,7 +17,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	// Loop 50 times
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 50; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -33,9 +33,31 @@ func main() {
 		}(i)
 	}
 
+	if _, err = client.Stale("a"); err != nil {
+		fmt.Println("Error:", err.Error())
+	}
+
+	for i := 50; i < 100; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			ok, err := client.Set(strconv.Itoa(i), []byte(fmt.Sprintf("value-%d", i)), 0)
+			if err != nil {
+				fmt.Println("Error:", err.Error())
+			}
+			if !ok {
+				fmt.Println("store failed")
+			} else {
+				fmt.Println("set ok")
+			}
+		}(i)
+	}
+
+	wg.Wait()
+
 	var wt sync.WaitGroup
 
-	for i := 0; i < 60; i++ {
+	for i := 0; i < 10; i++ {
 		wt.Add(1)
 		go func(i int) {
 			defer wt.Done()
@@ -46,7 +68,11 @@ func main() {
 			fmt.Printf("Iteration %d received value: %s\r\n", i, string(r))
 		}(i)
 	}
-
-	wg.Wait()
+/*
+	if _, err = client.Stale("a"); err != nil {
+		fmt.Println("Error:", err.Error())
+	}*/
+	
+	
 	wt.Wait()
 }

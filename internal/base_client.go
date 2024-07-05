@@ -29,7 +29,7 @@ func (c *BaseClient) Delete(key string) (bool, error) {
 }
 
 func (c *BaseClient) Stale(key string) (bool, error) {
-	command := fmt.Sprintf("md %s I\r\n", key)
+	command := fmt.Sprintf("ms %s 4 I\r\na\r\n", key)
 	return c.mutation([]byte(command))
 }
 

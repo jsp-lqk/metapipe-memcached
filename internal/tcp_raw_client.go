@@ -29,6 +29,18 @@ func NewTcpClient(c ConnectionTarget) (*TcpRawClient, error) {
 }
 
 func (tc *TcpRawClient) reconnect() error {
+	tc.mu.Lock()
+	defer tc.mu.Unlock()
+	if tc.deque != nil && tc.deque.Len() > 0 {
+		for i, n := 0, tc.deque.Len(); i < n; i++ {
+			r := tc.deque.PopBack()
+			r.responseChannel <- Response{
+				Header: nil,
+				Value: nil,
+				Error: errors.New("connection reset")}
+		}
+	}
+	
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", tc.address, tc.port))
 	if err != nil {
 		return fmt.Errorf("failed to connect to %s:%d - %v", tc.address, tc.port, err)
@@ -78,6 +90,7 @@ func (tc *TcpRawClient) listen() {
 		head, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Printf("error reading from server: %v\n", err)
+			tc.reconnect()
 			return
 		}
 		var value []byte = nil
@@ -89,6 +102,7 @@ func (tc *TcpRawClient) listen() {
 				if err != nil {
 					fmt.Println("Error converting string to int:", err)
 					fmt.Println(head)
+					tc.reconnect()
 					return
 				}
 				value = make([]byte, size+2)
@@ -98,11 +112,15 @@ func (tc *TcpRawClient) listen() {
 				}
 			case "CLIENT_ERROR":
 				fmt.Printf("error reading from server: %s\n", head)
-				panic("error")
+				tc.reconnect()
+				return
 		}
 		tc.mu.Lock()
 		if tc.deque.Len() == 0 {
-			panic(fmt.Sprintf("empty deque for response: %s\n", head))
+			tc.mu.Unlock()
+			fmt.Printf("empty deque for response: %s\n", head)
+			tc.reconnect()
+			return
 		}
 		req := tc.deque.PopBack()
 		tc.mu.Unlock()
