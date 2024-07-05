@@ -17,7 +17,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	// Loop 50 times
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
@@ -27,6 +27,8 @@ func main() {
 			}
 			if !ok {
 				fmt.Println("store failed")
+			} else {
+				fmt.Println("set ok")
 			}
 		}(i)
 	}

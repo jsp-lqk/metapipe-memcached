@@ -1,19 +1,14 @@
 package internal
 
-import (
-	"bufio"
-	"net"
-	"github.com/edwingeng/deque/v2"
-	"sync"
-)
-
 type RawClient interface {
 	Dispatch(r []byte) <-chan Response
 }
 
 type Client interface {
+	Add(key string) (bool, error)
 	Delete(key string) (bool, error)
 	Get(key string) ([]byte, error)
+	Replace(key string) (bool, error)
 	Set(key string, value []byte, ttl int) (bool, error)
 	Stale(key string) (bool, error)
 }
@@ -39,12 +34,8 @@ type Response struct {
 	Error error
 }
 
-type ClientConnection struct {
+type ConnectionTarget struct {
 	address    string
 	port       int
 	maxConcurrent int
-	conn       net.Conn
-	rw   *bufio.ReadWriter
-	mu sync.Mutex
-	deque      *deque.Deque[Request]
 }

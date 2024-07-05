@@ -9,30 +9,35 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type TcpRawClient struct {
-	ClientConnection
+	ConnectionTarget
+	conn       net.Conn
+	mu sync.Mutex
+	deque      *deque.Deque[Request]
+	rw   *bufio.ReadWriter
 }
 
-func NewTcpClient(addr string, port int, max int) (*TcpRawClient, error) {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", addr, port))
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to %s:%d - %v", addr, port, err)
+func NewTcpClient(c ConnectionTarget) (*TcpRawClient, error) {
+	tcpRawClient := &TcpRawClient{
+		ConnectionTarget: c,
 	}
+	tcpRawClient.reconnect()
+	return tcpRawClient, nil
+}
 
-	clientConn := &TcpRawClient{
-		ClientConnection: ClientConnection{
-		address: addr,
-		port:    port,
-		maxConcurrent: max,
-		deque: deque.NewDeque[Request](),
-		conn:    conn,
-		rw: bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
-		},
+func (tc *TcpRawClient) reconnect() error {
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", tc.address, tc.port))
+	if err != nil {
+		return fmt.Errorf("failed to connect to %s:%d - %v", tc.address, tc.port, err)
 	}
-	go clientConn.listen()
-	return clientConn, nil
+	tc.conn = conn
+	tc.deque = deque.NewDeque[Request]()
+	tc.rw = bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
+	go tc.listen()
+	return nil
 }
 
 func (tc *TcpRawClient) Dispatch(r []byte) <-chan Response {
@@ -48,7 +53,6 @@ func (tc *TcpRawClient) Dispatch(r []byte) <-chan Response {
 		}
 		tc.mu.Lock()
 		defer tc.mu.Unlock()
-		tc.deque.PushFront(rq)
 		if _, err := tc.rw.Write(r); err != nil {
 			rc <- Response{
 				Header: nil,
@@ -63,6 +67,7 @@ func (tc *TcpRawClient) Dispatch(r []byte) <-chan Response {
 				Error: err}
 			return
 		}
+		tc.deque.PushFront(rq)
 	}()
 	return rc
 }

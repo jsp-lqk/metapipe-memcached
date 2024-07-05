@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
-	"testing"
 	"runtime"
+	"testing"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	. "github.com/jsp-lqk/metapipe-memcached/internal"
@@ -13,7 +13,7 @@ import (
 const (
 	memcachedServer = "127.0.0.1:11211"
 	totalKeys       = 10000
-	poolSize        = 50 // Adjust pool size as needed
+	poolSize        = 50  // Adjust pool size as needed
 	parallelism     = 300 // Increase parallelism here
 )
 
@@ -35,7 +35,6 @@ func BenchmarkMemcacheGet(b *testing.B) {
 	runtime.GOMAXPROCS(parallelism)
 
 	b.ResetTimer()
-	
 
 	for i := 0; i < b.N; i++ {
 		b.RunParallel(func(pb *testing.PB) {
