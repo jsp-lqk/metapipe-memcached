@@ -7,9 +7,8 @@ networks:
 services:
   memcached:
     image: 'bitnami/memcached:latest'
-    command: /opt/bitnami/scripts/memcached/run.sh -u 11211 -vvv
+    command: /opt/bitnami/scripts/memcached/run.sh -vvv
     networks:
       - app-tier
     ports:
-      - "11211:11211/tcp"
-      - "11211:11211/udp"
+      - "11211:11211"

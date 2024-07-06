@@ -12,23 +12,23 @@ import (
 	"sync"
 )
 
-type TcpRawClient struct {
+type BaseTCPClient struct {
 	ConnectionTarget
-	conn       net.Conn
-	mu sync.Mutex
-	deque      *deque.Deque[Request]
-	rw   *bufio.ReadWriter
+	conn  net.Conn
+	mu    sync.Mutex
+	deque *deque.Deque[Request]
+	rw    *bufio.ReadWriter
 }
 
-func NewTcpClient(c ConnectionTarget) (*TcpRawClient, error) {
-	tcpRawClient := &TcpRawClient{
+func NewBaseTCPClient(c ConnectionTarget) (*BaseTCPClient, error) {
+	tcpRawClient := &BaseTCPClient{
 		ConnectionTarget: c,
 	}
 	tcpRawClient.reconnect()
 	return tcpRawClient, nil
 }
 
-func (tc *TcpRawClient) reconnect() error {
+func (tc *BaseTCPClient) reconnect() error {
 	tc.mu.Lock()
 	defer tc.mu.Unlock()
 	if tc.deque != nil && tc.deque.Len() > 0 {
@@ -36,11 +36,11 @@ func (tc *TcpRawClient) reconnect() error {
 			r := tc.deque.PopBack()
 			r.responseChannel <- Response{
 				Header: nil,
-				Value: nil,
-				Error: errors.New("connection reset")}
+				Value:  nil,
+				Error:  errors.New("connection reset")}
 		}
 	}
-	
+
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", tc.address, tc.port))
 	if err != nil {
 		return fmt.Errorf("failed to connect to %s:%d - %v", tc.address, tc.port, err)
@@ -52,15 +52,15 @@ func (tc *TcpRawClient) reconnect() error {
 	return nil
 }
 
-func (tc *TcpRawClient) Dispatch(r []byte) <-chan Response {
+func (tc *BaseTCPClient) Dispatch(r []byte) <-chan Response {
 	rc := make(chan Response)
 	go func() {
 		rq := Request{rc}
-		if (tc.deque.Len() > tc.maxConcurrent) {
+		if tc.deque.Len() > tc.maxConcurrent {
 			rc <- Response{
 				Header: nil,
-				Value: nil,
-				Error: errors.New("connection overloaded")}
+				Value:  nil,
+				Error:  errors.New("connection overloaded")}
 			return
 		}
 		tc.mu.Lock()
@@ -68,15 +68,15 @@ func (tc *TcpRawClient) Dispatch(r []byte) <-chan Response {
 		if _, err := tc.rw.Write(r); err != nil {
 			rc <- Response{
 				Header: nil,
-				Value: nil,
-				Error: err}
+				Value:  nil,
+				Error:  err}
 			return
 		}
 		if err := tc.rw.Flush(); err != nil {
 			rc <- Response{
 				Header: nil,
-				Value: nil,
-				Error: err}
+				Value:  nil,
+				Error:  err}
 			return
 		}
 		tc.deque.PushFront(rq)
@@ -84,7 +84,7 @@ func (tc *TcpRawClient) Dispatch(r []byte) <-chan Response {
 	return rc
 }
 
-func (tc *TcpRawClient) listen() {
+func (tc *BaseTCPClient) listen() {
 	reader := tc.rw.Reader
 	for {
 		head, err := reader.ReadString('\n')
@@ -96,24 +96,22 @@ func (tc *TcpRawClient) listen() {
 		var value []byte = nil
 		header := strings.Fields(head)
 		switch header[0] {
-			case "VA":
-				sizeString := header[1]
-				size, err := strconv.Atoi(sizeString)
-				if err != nil {
-					fmt.Println("Error converting string to int:", err)
-					fmt.Println(head)
-					tc.reconnect()
-					return
-				}
-				value = make([]byte, size+2)
-				if _, err = io.ReadFull(reader, value); err != nil {
-					fmt.Printf("error reading from server: %v\n", err)
-					return
-				}
-			case "CLIENT_ERROR":
-				fmt.Printf("error reading from server: %s\n", head)
+		case "VA":
+			sizeString := header[1]
+			size, err := strconv.Atoi(sizeString)
+			if err != nil {
+				fmt.Println("fatal connection error parsing response size:", err)
 				tc.reconnect()
 				return
+			}
+			value = make([]byte, size+2)
+			if _, err = io.ReadFull(reader, value); err != nil {
+				fmt.Printf("fatal connection error reading from server: %v\n", err)
+				tc.reconnect()
+				return
+			}
+		case "ERROR", "CLIENT_ERROR":
+			err = fmt.Errorf("error reading from server: %s", header[0])
 		}
 		tc.mu.Lock()
 		if tc.deque.Len() == 0 {
@@ -126,8 +124,8 @@ func (tc *TcpRawClient) listen() {
 		tc.mu.Unlock()
 		req.responseChannel <- Response{
 			Header: header,
-			Value: value,
-			Error: err,
+			Value:  value,
+			Error:  err,
 		}
 	}
 }

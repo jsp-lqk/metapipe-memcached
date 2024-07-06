@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	client, err := NewBaseClient("127.0.0.1", 11211, 100)
+	client, err := NewMetaClient("127.0.0.1", 11211, 100)
 	if err != nil {
 		fmt.Println("Error:", err)
 		panic(err)
@@ -33,8 +33,8 @@ func main() {
 		}(i)
 	}
 
-	if _, err = client.Stale("a"); err != nil {
-		fmt.Println("Error:", err.Error())
+	if _, err = client.Delete("a"); err != nil {
+		fmt.Println("delete:", err.Error())
 	}
 
 	for i := 50; i < 100; i++ {
@@ -68,11 +68,22 @@ func main() {
 			fmt.Printf("Iteration %d received value: %s\r\n", i, string(r))
 		}(i)
 	}
-/*
+
+	fmt.Println("del")
+	if _, err = client.Delete("a"); err != nil {
+		fmt.Println("delete:", err.Error())
+	}
+
+	fmt.Println("sta")
 	if _, err = client.Stale("a"); err != nil {
+		fmt.Println("stale:", err.Error())
+	}
+
+	fmt.Println("set")
+	_, err = client.Set("asas", []byte(fmt.Sprintf("value-%d-djihbfeofjuhfsuifhsuhfdsuhfdsuifhdsuifhsduhfsduifhusifhsiudhfuisdhfiushfusdiudsfhusifudsifushudfifsufdhisudhfsufhdiusuhdufbufsybybs", 1484151)), 0)
+	if err != nil {
 		fmt.Println("Error:", err.Error())
-	}*/
-	
-	
+	}
+
 	wt.Wait()
 }
