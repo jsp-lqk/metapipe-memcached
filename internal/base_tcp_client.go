@@ -31,7 +31,8 @@ func NewBaseTCPClient(c ConnectionTarget) (*BaseTCPClient, error) {
 func (tc *BaseTCPClient) reconnect() error {
 	tc.mu.Lock()
 	defer tc.mu.Unlock()
-	if tc.deque != nil && tc.deque.Len() > 0 {
+	// on connection loss, clean up the dequeue
+	if tc.deque != nil {
 		for i, n := 0, tc.deque.Len(); i < n; i++ {
 			r := tc.deque.PopBack()
 			r.responseChannel <- Response{
@@ -96,8 +97,14 @@ func (tc *BaseTCPClient) listen() {
 		var value []byte = nil
 		header := strings.Fields(head)
 		switch header[0] {
-		case "VA":
-			sizeString := header[1]
+		case "VA", "VALUE":
+			// only value responses need further reading
+			var sizeString string
+			if header[0] == "VA" {
+				sizeString = header[1]
+			} else {
+				sizeString = header[3]
+			}
 			size, err := strconv.Atoi(sizeString)
 			if err != nil {
 				fmt.Println("fatal connection error parsing response size:", err)
@@ -110,6 +117,7 @@ func (tc *BaseTCPClient) listen() {
 				tc.reconnect()
 				return
 			}
+			value = value[:len(value)-2]
 		case "ERROR", "CLIENT_ERROR":
 			err = fmt.Errorf("error reading from server: %s", header[0])
 		}
