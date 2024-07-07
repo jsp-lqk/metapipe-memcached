@@ -29,4 +29,13 @@ type Client interface {
 	Set(key string, value []byte, ttl int) (MutationResult, error)
 	Stale(key string) (MutationResult, error)
 	Touch(key string, ttl int) (MutationResult, error)
+	Shutdown()
+}
+
+type MetapipeClient struct {
+
+}
+
+func NewMetapipeClient() {
+	
 }

@@ -5,5 +5,6 @@ import (
 )
 
 type Router interface {
-	Client(key string) Client
+	Route(key string) Client
+	Shutdown()
 }
