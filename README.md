@@ -1,6 +1,8 @@
 # metapipe-memcached
 
-A small and performant memcached client for golang. It uses the memcached [meta protocol](https://github.com/memcached/memcached/blob/1.6.29/doc/protocol.txt#L79) and [protocol pipelining](https://en.wikipedia.org/wiki/Protocol_pipelining) to handle heavy traffic.
+A small and performant memcached client for golang. It uses [protocol pipelining](https://en.wikipedia.org/wiki/Protocol_pipelining) to handle heavy traffic efficiently. 
+
+At the moment, it only supports the latest meta protocol, but adding classic text protocol should be possible.
 
 TODO
 ----
@@ -14,3 +16,5 @@ TODO
 - benchmarking
 - monitoring and metrics
 - CAS
+- classic text protocol
+- generics client that takes serializer/deserializer

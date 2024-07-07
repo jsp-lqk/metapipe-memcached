@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	. "github.com/jsp-lqk/metapipe-memcached"
 	. "github.com/jsp-lqk/metapipe-memcached/internal"
 	"strconv"
 	"sync"
@@ -21,11 +22,11 @@ func main() {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			ok, err := client.Set(strconv.Itoa(i), []byte(fmt.Sprintf("value-%d", i)), 0)
+			r, err := client.Set(strconv.Itoa(i), []byte(fmt.Sprintf("value-%d", i)), 0)
 			if err != nil {
 				fmt.Println("Error:", err.Error())
 			}
-			if !ok {
+			if r != Success {
 				fmt.Println("store failed")
 			} else {
 				fmt.Println("set ok")
@@ -41,11 +42,11 @@ func main() {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			ok, err := client.Set(strconv.Itoa(i), []byte(fmt.Sprintf("value-%d", i)), 0)
+			r, err := client.Set(strconv.Itoa(i), []byte(fmt.Sprintf("value-%d", i)), 0)
 			if err != nil {
 				fmt.Println("Error:", err.Error())
 			}
-			if !ok {
+			if r != Success {
 				fmt.Println("store failed")
 			} else {
 				fmt.Println("set ok")
@@ -86,4 +87,11 @@ func main() {
 	}
 
 	wt.Wait()
+
+	fmt.Println("debug")
+	d, err := client.Info("1")
+	if err != nil {
+		fmt.Println("Error:", err.Error())
+	}
+	fmt.Printf("debug: %v", d)
 }

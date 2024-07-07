@@ -18,6 +18,7 @@ type BaseTCPClient struct {
 	mu    sync.Mutex
 	deque *deque.Deque[Request]
 	rw    *bufio.ReadWriter
+	shutdown bool
 }
 
 func NewBaseTCPClient(c ConnectionTarget) (*BaseTCPClient, error) {
@@ -26,6 +27,10 @@ func NewBaseTCPClient(c ConnectionTarget) (*BaseTCPClient, error) {
 	}
 	tcpRawClient.reconnect()
 	return tcpRawClient, nil
+}
+
+func (tc *BaseTCPClient) Shutdown() {
+	tc.shutdown = true
 }
 
 func (tc *BaseTCPClient) reconnect() error {
@@ -86,6 +91,9 @@ func (tc *BaseTCPClient) Dispatch(r []byte) <-chan Response {
 }
 
 func (tc *BaseTCPClient) listen() {
+	if tc.shutdown {
+		return
+	}
 	reader := tc.rw.Reader
 	for {
 		head, err := reader.ReadString('\n')
