@@ -1,16 +1,14 @@
-package internal
+package client
 
 import (
 	"context"
-    "fmt"
-    "strings"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-
-	. "github.com/jsp-lqk/metapipe-memcached"
 )
 
 func TestMetaGetsAndSetsCommands(t *testing.T) {
@@ -40,7 +38,7 @@ func TestMetaGetsAndSetsCommands(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c, err := NewMetaClient(host, port.Int(), 100)
+	c, err := SingleTargetClient(ConnectionTarget{Address: host, Port: port.Int(), MaxConcurrent: 100})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,27 +64,27 @@ func TestMetaGetsAndSetsCommands(t *testing.T) {
 	}
 	assert.Equal(t, []byte("1"), gr, "Expected byte of '1'")
 
-    // set many
+	// set many
 	for i := 0; i < 50; i++ {
-        mr, err = c.Set(fmt.Sprintf("key-%d", i), []byte(fmt.Sprintf("value-%d", i)), 0)
-        if err != nil {
-            t.Fatal(err)
-        }
-        assert.Equal(t, Success, mr, "Expected Success response")
+		mr, err = c.Set(fmt.Sprintf("key-%d", i), []byte(fmt.Sprintf("value-%d", i)), 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, Success, mr, "Expected Success response")
 	}
 
-    // get many
-    keys := make([]string, 50)
+	// get many
+	keys := make([]string, 50)
 	for i := 0; i < 50; i++ {
-        keys[i] = fmt.Sprintf("key-%d", i)
+		keys[i] = fmt.Sprintf("key-%d", i)
 	}
-    mp, err := c.GetMany(keys)
-    if err != nil {
-        t.Fatal(err)
-    }
-    for _, k := range keys {
-        assert.Equal(t, []byte(fmt.Sprintf("value-" + strings.TrimPrefix(k, "key-"))), mp[k], "Unexpected response value")
+	mp, err := c.GetMany(keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range keys {
+		assert.Equal(t, []byte(fmt.Sprintf("value-"+strings.TrimPrefix(k, "key-"))), mp[k], "Unexpected response value")
 	}
 
-    c.Shutdown()
+	c.Shutdown()
 }

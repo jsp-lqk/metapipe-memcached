@@ -9,9 +9,12 @@ TODO
 - docs
 - more tests
 - timeouts
+- backoff retry
 - TLS
 - sharding
 - tagged routing
+- replicated routing (no sharding)
+- sharded routing
 - operation blacklisting
 - benchmarking
 - monitoring and metrics

@@ -1,4 +1,4 @@
-package internal
+package client
 
 import (
 	"bufio"
@@ -14,10 +14,10 @@ import (
 
 type BaseTCPClient struct {
 	ConnectionTarget
-	conn  net.Conn
-	mu    sync.Mutex
-	deque *deque.Deque[Request]
-	rw    *bufio.ReadWriter
+	conn     net.Conn
+	mu       sync.Mutex
+	deque    *deque.Deque[Request]
+	rw       *bufio.ReadWriter
 	shutdown bool
 }
 
@@ -47,9 +47,9 @@ func (tc *BaseTCPClient) reconnect() error {
 		}
 	}
 
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", tc.address, tc.port))
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", tc.Address, tc.Port))
 	if err != nil {
-		return fmt.Errorf("failed to connect to %s:%d - %v", tc.address, tc.port, err)
+		return fmt.Errorf("failed to connect to %s:%d - %v", tc.Address, tc.Port, err)
 	}
 	tc.conn = conn
 	tc.deque = deque.NewDeque[Request]()
@@ -62,7 +62,7 @@ func (tc *BaseTCPClient) Dispatch(r []byte) <-chan Response {
 	rc := make(chan Response)
 	go func() {
 		rq := Request{rc}
-		if tc.deque.Len() > tc.maxConcurrent {
+		if tc.deque.Len() > tc.MaxConcurrent {
 			rc <- Response{
 				Header: nil,
 				Value:  nil,
@@ -98,7 +98,7 @@ func (tc *BaseTCPClient) listen() {
 	for {
 		head, err := reader.ReadString('\n')
 		if err != nil {
-			fmt.Printf("error reading from server: %v\n", err)
+			fmt.Printf("irrecoverable error reading from server: %v\n", err)
 			tc.reconnect()
 			return
 		}
