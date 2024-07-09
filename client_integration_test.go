@@ -60,7 +60,7 @@ func triggerMaxConcurrent(t *testing.T, host string, port int) {
 	defer c.Shutdown()
 
 	var wg sync.WaitGroup
-	var maxHit atomic.Bool 
+	var maxHit atomic.Bool
 
 	for i := 0; i < 500; i++ {
 		wg.Add(1)
