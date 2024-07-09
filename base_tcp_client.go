@@ -61,12 +61,19 @@ func (tc *BaseTCPClient) reconnect() error {
 func (tc *BaseTCPClient) Dispatch(r []byte) <-chan Response {
 	rc := make(chan Response)
 	go func() {
+		if tc.shutdown {
+			rc <- Response{
+				Header: nil,
+				Value:  nil,
+				Error:  errors.New("connection is shutdown")}
+			return
+		}
 		rq := Request{rc}
 		if tc.deque.Len() > tc.MaxConcurrent {
 			rc <- Response{
 				Header: nil,
 				Value:  nil,
-				Error:  errors.New("connection overloaded")}
+				Error:  ErrConnectionOverloaded}
 			return
 		}
 		tc.mu.Lock()
