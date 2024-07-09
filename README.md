@@ -4,6 +4,8 @@ A small and performant concurrent memcached client for golang. It uses [protocol
 
 At the moment, it only supports the latest meta protocol, but adding classic text protocol should be possible.
 
+***WARNING*** This is probably very buggy. I haven't tested it in production yet, apart from integration tests.
+
 ## Example
 
 Install and import:
