@@ -2,8 +2,11 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +14,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestMetaGetsAndSetsCommands(t *testing.T) {
+func setup(t *testing.T) (context.Context, testcontainers.Container, string, int) {
 	ctx := context.Background()
 
 	req := testcontainers.ContainerRequest{
@@ -26,7 +29,6 @@ func TestMetaGetsAndSetsCommands(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer memcachedContainer.Terminate(ctx)
 
 	host, err := memcachedContainer.Host(ctx)
 	if err != nil {
@@ -38,10 +40,51 @@ func TestMetaGetsAndSetsCommands(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c, err := SingleTargetClient(ConnectionTarget{Address: host, Port: port.Int(), MaxConcurrent: 100})
+	return ctx, memcachedContainer, host, port.Int()
+}
+
+func TestMetaGetsAndSetsCommands(t *testing.T) {
+	ctx, memcachedContainer, host, port := setup(t)
+	defer memcachedContainer.Terminate(ctx)
+
+	simpleGetsAndSets(t, host, port)
+	triggerMaxConcurrent(t, host, port)
+}
+
+func triggerMaxConcurrent(t *testing.T, host string, port int) {
+
+	c, err := SingleTargetClient(ConnectionTarget{Address: host, Port: port, MaxConcurrent: 5})
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer c.Shutdown()
+
+	var wg sync.WaitGroup
+	var maxHit atomic.Bool 
+
+	for i := 0; i < 500; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			_, err := c.Set(fmt.Sprintf("key-%d", i), []byte(fmt.Sprintf("value-%d", i)), 0)
+			if err != nil {
+				if errors.Is(err, ErrConnectionOverloaded) {
+					maxHit.Store(true)
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
+	assert.True(t, maxHit.Load(), "Expected to hit the max concurrent limit")
+}
+
+func simpleGetsAndSets(t *testing.T, host string, port int) {
+
+	c, err := SingleTargetClient(ConnectionTarget{Address: host, Port: port, MaxConcurrent: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Shutdown()
 
 	// get - not found
 	gr, err := c.Get("not-exists")
@@ -85,6 +128,4 @@ func TestMetaGetsAndSetsCommands(t *testing.T) {
 	for _, k := range keys {
 		assert.Equal(t, []byte(fmt.Sprintf("value-"+strings.TrimPrefix(k, "key-"))), mp[k], "Unexpected response value")
 	}
-
-	c.Shutdown()
 }

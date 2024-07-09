@@ -17,6 +17,7 @@ type Response struct {
 	Error  error
 }
 
+// InnerMetaClient implements the memcached meta protocol
 type InnerMetaClient struct {
 	readClient     *BaseTCPClient
 	mutationClient *BaseTCPClient
@@ -107,11 +108,6 @@ func getDebugValue(input string) string {
 
 func (c *InnerMetaClient) Delete(key string) (MutationResult, error) {
 	command := fmt.Sprintf("md %s\r\n", key)
-	return c.mutation([]byte(command))
-}
-
-func (c *InnerMetaClient) Stale(key string) (MutationResult, error) {
-	command := fmt.Sprintf("md %s I\r\n", key)
 	return c.mutation([]byte(command))
 }
 

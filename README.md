@@ -4,8 +4,35 @@ A small and performant concurrent memcached client for golang. It uses [protocol
 
 At the moment, it only supports the latest meta protocol, but adding classic text protocol should be possible.
 
-TODO
-----
+## Example
+
+Install and import:
+```shell
+$ go get github.com/jsp-lqk/metapipe-memcached
+```
+
+```golang
+import "github.com/jsp-lqk/metapipe-memcached"
+``` 
+
+Create a client:  
+```go
+c, err := client.SingleTargetClient(ConnectionTarget{Address: host, Port: port.Int(), MaxConcurrent: 100})
+```
+
+Get and set:
+```go
+mr, err := c.Set("key", []byte("value"), 0)
+if err != nil {
+// handle
+}
+gr, err = c.Get("key")
+if err != nil {
+// handle
+}
+```
+
+## TODO
 - docs
 - more tests
 - timeouts
