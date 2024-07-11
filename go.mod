@@ -3,6 +3,8 @@ module github.com/jsp-lqk/metapipe-memcached
 go 1.22
 
 require (
+	github.com/dgryski/go-jump v0.0.0-20211018200510-ba001c3ffce0
+	github.com/docker/go-connections v0.5.0
 	github.com/edwingeng/deque/v2 v2.1.1
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.32.0
@@ -21,7 +23,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v27.0.3+incompatible // indirect
-	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect

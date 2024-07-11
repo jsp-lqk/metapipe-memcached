@@ -19,7 +19,7 @@ import "github.com/jsp-lqk/metapipe-memcached"
 
 Create a client:  
 ```go
-c, err := client.SingleTargetClient(ConnectionTarget{Address: host, Port: port.Int(), MaxConcurrent: 100})
+c, err := client.SingleTargetClient(ConnectionTarget{Address: "127.0.0.1", Port: 11211, MaxConcurrent: 100})
 ```
 
 Get and set:
@@ -40,10 +40,8 @@ if err != nil {
 - timeouts
 - backoff retry
 - TLS
-- sharding
 - tagged routing
 - replicated routing (no sharding)
-- sharded routing
 - operation blacklisting
 - benchmarking
 - monitoring and metrics
