@@ -19,6 +19,7 @@ type Response struct {
 
 // InnerMetaClient implements the memcached meta protocol
 type InnerMetaClient struct {
+	target         ConnectionTarget
 	readClient     *BaseTCPClient
 	mutationClient *BaseTCPClient
 }
@@ -32,7 +33,7 @@ func NewInnerMetaClient(target ConnectionTarget) (*InnerMetaClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &InnerMetaClient{readClient: r, mutationClient: m}, nil
+	return &InnerMetaClient{readClient: r, mutationClient: m, target: target}, nil
 }
 
 func (c *InnerMetaClient) Shutdown() {

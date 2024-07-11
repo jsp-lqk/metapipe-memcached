@@ -67,6 +67,33 @@ func SingleTargetClient(target ConnectionTarget) (Client, error) {
 
 }
 
+// Creates a Client
+func NewClient(targets ...ConnectionTarget) (Client, error) {
+	if len(targets) == 1 {
+		return SingleTargetClient(targets[0])
+	} else {
+		return ShardedClient(targets...)
+	}
+}
+
+// Creates a Client that connects to many memcached servers
+func ShardedClient(targets ...ConnectionTarget) (Client, error) {
+	clients := make([]MemcacheClient, 0, len(targets))
+
+	for _, target := range targets {
+		ic, err := NewInnerMetaClient(target)
+		if err != nil {
+			return Client{}, fmt.Errorf("error creating connection: %w", err)
+		}
+		clients = append(clients, ic)
+	}
+
+	return Client{
+		router: &ShardedRouter{clients: clients},
+	}, nil
+
+}
+
 // Stores an entry ONLY if the key does NOT exist in the server
 func (c *Client) Add(key string, value []byte, ttl int) (MutationResult, error) {
 	s := c.router.Route(key)
