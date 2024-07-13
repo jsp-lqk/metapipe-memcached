@@ -69,7 +69,7 @@ func (tc *BaseTCPClient) Dispatch(r []byte) <-chan Response {
 			return
 		}
 		rq := Request{rc}
-		if tc.deque.Len() > tc.MaxConcurrent {
+		if tc.deque.Len() > tc.MaxOutstandingRequests {
 			rc <- Response{
 				Header: nil,
 				Value:  nil,

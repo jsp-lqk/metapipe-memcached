@@ -3,6 +3,8 @@ package client
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -44,9 +46,9 @@ type MemcacheClient interface {
 
 // ConnectionTarget is the information used to locate and connect to a memcached server
 type ConnectionTarget struct {
-	Address       string
-	Port          int
-	MaxConcurrent int
+	Address                string
+	Port                   int
+	MaxOutstandingRequests int
 }
 
 // A Client is an instance of the metapipe client
@@ -67,13 +69,42 @@ func SingleTargetClient(target ConnectionTarget) (Client, error) {
 
 }
 
-// Creates a Client
-func NewClient(targets ...ConnectionTarget) (Client, error) {
+// Creates a default Client, server strings in the format host:ip
+func DefaultClient(servers ...string) (Client, error) {
+	targets := make([]ConnectionTarget, 0, len(servers))
+	for _, server := range servers {
+		h, p, err := splitHostPort(server)
+		if err != nil {
+			return Client{}, fmt.Errorf("error creating connection for server %s: %w", server, err)
+		}
+		targets = append(targets, ConnectionTarget{Address: h, Port: p, MaxOutstandingRequests: 1000})
+	}
 	if len(targets) == 1 {
 		return SingleTargetClient(targets[0])
 	} else {
 		return ShardedClient(targets...)
 	}
+}
+
+func splitHostPort(input string) (string, int, error) {
+	parts := strings.Split(input, ":")
+	if len(parts) != 2 {
+		return "", 0, errors.New("input is not in the format host:port")
+	}
+
+	host := parts[0]
+	portStr := parts[1]
+
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		return "", 0, errors.New("port is not a valid port number")
+	}
+
+	if port < 0 || port > 65535 {
+		return "", 0, errors.New("port number is out of valid port range")
+	}
+
+	return host, port, nil
 }
 
 // Creates a Client that connects to many memcached servers

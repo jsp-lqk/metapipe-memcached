@@ -45,18 +45,18 @@ func buildContainer(t *testing.T, port int) (context.Context, testcontainers.Con
 }
 
 func TestShardedGetsAndSets(t *testing.T) {
-	targets := make([]ConnectionTarget, 0, 5)
+	servers := make([]string, 0, 5)
 	for i := 0; i <= 4; i++ {
 		ctx, c, host, port := buildContainer(t, 11211+i)
-		targets = append(targets, ConnectionTarget{Address: host, Port: port, MaxConcurrent: 100})
+		servers = append(servers, fmt.Sprintf("%s:%d", host, port))
 		defer c.Terminate(ctx)
 	}
-	shardedTest(t, targets)
+	shardedTest(t, servers)
 }
 
-func shardedTest(t *testing.T, targets []ConnectionTarget) {
+func shardedTest(t *testing.T, targets []string) {
 
-	c, err := ShardedClient(targets...)
+	c, err := DefaultClient(targets...)
 	if err != nil {
 		t.Fatal(err)
 	}

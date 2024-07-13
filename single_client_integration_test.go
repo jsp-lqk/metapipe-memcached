@@ -53,7 +53,7 @@ func TestMetaGetsAndSetsCommands(t *testing.T) {
 
 func triggerMaxConcurrent(t *testing.T, host string, port int) {
 
-	c, err := SingleTargetClient(ConnectionTarget{Address: host, Port: port, MaxConcurrent: 5})
+	c, err := SingleTargetClient(ConnectionTarget{Address: host, Port: port, MaxOutstandingRequests: 5})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func triggerMaxConcurrent(t *testing.T, host string, port int) {
 
 func simpleGetsAndSets(t *testing.T, host string, port int) {
 
-	c, err := SingleTargetClient(ConnectionTarget{Address: host, Port: port, MaxConcurrent: 100})
+	c, err := DefaultClient(fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		t.Fatal(err)
 	}

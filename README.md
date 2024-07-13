@@ -1,10 +1,10 @@
 # metapipe-memcached
 
-A small and performant concurrent memcached client for golang. It uses [protocol pipelining](https://en.wikipedia.org/wiki/Protocol_pipelining) to handle heavy traffic efficiently. 
+A small and performant concurrent memcached client for golang. It uses [protocol pipelining](https://en.wikipedia.org/wiki/Protocol_pipelining) to handle heavy traffic efficiently. It is safe to be used by multiple concurrent goroutines at the same time.
 
 At the moment, it only supports the latest meta protocol, but adding classic text protocol should be possible.
 
-***WARNING*** This is probably very buggy. I haven't tested it in production yet, apart from integration tests.
+Docs at [https://pkg.go.dev/github.com/jsp-lqk/metapipe-memcached](https://pkg.go.dev/github.com/jsp-lqk/metapipe-memcached)
 
 ## Example
 
@@ -19,7 +19,7 @@ import "github.com/jsp-lqk/metapipe-memcached"
 
 Create a client:  
 ```go
-c, err := client.SingleTargetClient(ConnectionTarget{Address: "127.0.0.1", Port: 11211, MaxConcurrent: 100})
+c, err := client.DefaultClient("127.0.0.1:11211")
 ```
 
 Get and set:
