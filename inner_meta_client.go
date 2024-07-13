@@ -144,13 +144,13 @@ func (c *InnerMetaClient) Touch(key string, ttl int) (MutationResult, error) {
 }
 
 func (c *InnerMetaClient) Add(key string, value []byte, ttl int) (MutationResult, error) {
-	command := fmt.Sprintf("ms %s %d E%d\r\n", key, len(value), ttl)
+	command := fmt.Sprintf("ms %s %d ME T%d\r\n", key, len(value), ttl)
 	dpt := append(append([]byte(command), value...), []byte("\r\n")...)
 	return c.mutation(dpt)
 }
 
 func (c *InnerMetaClient) Replace(key string, value []byte, ttl int) (MutationResult, error) {
-	command := fmt.Sprintf("ms %s %d R%d\r\n", key, len(value), ttl)
+	command := fmt.Sprintf("ms %s %d MR T%d\r\n", key, len(value), ttl)
 	dpt := append(append([]byte(command), value...), []byte("\r\n")...)
 	return c.mutation(dpt)
 }

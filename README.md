@@ -35,8 +35,6 @@ if err != nil {
 ```
 
 ## TODO
-- docs
-- more tests
 - timeouts
 - backoff retry
 - TLS

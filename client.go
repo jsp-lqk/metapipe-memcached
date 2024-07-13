@@ -144,6 +144,7 @@ func (c *Client) Get(key string) ([]byte, error) {
 }
 
 // Gets many entries
+// This method ignores errors, and turn them into the equivalent of cache misses
 func (c *Client) GetMany(keys []string) (map[string][]byte, error) {
 	result := make(map[string][]byte, len(keys))
 	var mu sync.Mutex
@@ -157,6 +158,8 @@ func (c *Client) GetMany(keys []string) (map[string][]byte, error) {
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
+				// even if a single get results in error, we don't want it to bring down
+				// the whole GetMany operation, so we print it and move on
 				fmt.Printf("error getting key %s: %s", key, err)
 				result[key] = nil
 			} else {
