@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Request struct {
@@ -157,23 +158,27 @@ func (c *InnerMetaClient) Replace(key string, value []byte, ttl int) (MutationRe
 
 func (c *InnerMetaClient) mutation(command []byte) (MutationResult, error) {
 	ch := c.mutationClient.Dispatch(command)
-	r := <-ch
-	if r.Error != nil {
-		return Error, fmt.Errorf("operation failed: %w", r.Error)
-	}
-	if len(r.Header) == 0 {
-		return Error, errors.New("empty response")
-	}
-	switch r.Header[0] {
-	case "HD":
-		return Success, nil
-	case "NS":
-		return NotStored, nil
-	case "EX":
-		return Exists, nil
-	case "NF", "EN":
-		return NotFound, nil
-	default:
-		return Error, fmt.Errorf("invalid response: %s", r.Header[0])
+	select {
+	case r := <-ch:
+		if r.Error != nil {
+			return Error, fmt.Errorf("operation failed: %w", r.Error)
+		}
+		if len(r.Header) == 0 {
+			return Error, errors.New("empty response")
+		}
+		switch r.Header[0] {
+		case "HD":
+			return Success, nil
+		case "NS":
+			return NotStored, nil
+		case "EX":
+			return Exists, nil
+		case "NF", "EN":
+			return NotFound, nil
+		default:
+			return Error, fmt.Errorf("invalid response: %s", r.Header[0])
+		}
+	case <-time.After(time.Duration(c.mutationClient.TimeoutMs) * time.Millisecond):
+		return Error, ErrRequestTimeout
 	}
 }

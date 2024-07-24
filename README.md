@@ -34,8 +34,9 @@ if err != nil {
 }
 ```
 
+If you want to customize connection settings, then instead of `DefaultClient`, use either `SingleTargetClient` (for a single server connection), or `ShardedClient` (for multiple servers). Both take either a single or an array of `ConnectionTarget`, where you can set custom maximum outstanding requests (the amount of requests waiting for response from memcached, default 1000) or the request timeout (in ms, default 1000).
+
 ## TODO
-- timeouts
 - backoff retry
 - TLS
 - tagged routing
