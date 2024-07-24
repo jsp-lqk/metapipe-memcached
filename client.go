@@ -9,6 +9,7 @@ import (
 )
 
 var ErrConnectionOverloaded = errors.New("connection overloaded")
+var ErrRequestTimeout = errors.New("request timeout")
 
 // MutationResult contains information about the outcome of a mutation operation (anything but get or info)
 type MutationResult int
@@ -49,6 +50,7 @@ type ConnectionTarget struct {
 	Address                string
 	Port                   int
 	MaxOutstandingRequests int
+	TimeoutMs              int
 }
 
 // A Client is an instance of the metapipe client
@@ -77,7 +79,7 @@ func DefaultClient(servers ...string) (Client, error) {
 		if err != nil {
 			return Client{}, fmt.Errorf("error creating connection for server %s: %w", server, err)
 		}
-		targets = append(targets, ConnectionTarget{Address: h, Port: p, MaxOutstandingRequests: 1000})
+		targets = append(targets, ConnectionTarget{Address: h, Port: p, MaxOutstandingRequests: 1000, TimeoutMs: 1000})
 	}
 	if len(targets) == 1 {
 		return SingleTargetClient(targets[0])

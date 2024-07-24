@@ -51,6 +51,7 @@ func TestMetaGetsAndSetsCommands(t *testing.T) {
 	simpleGetsAndSets(t, host, port)
 	allOtherOperations(t, host, port)
 	triggerMaxConcurrent(t, host, port)
+	triggerTimeout(t, host, port)
 }
 
 func triggerMaxConcurrent(t *testing.T, host string, port int) {
@@ -78,6 +79,33 @@ func triggerMaxConcurrent(t *testing.T, host string, port int) {
 	}
 	wg.Wait()
 	assert.True(t, maxHit.Load(), "Expected to hit the max concurrent limit")
+}
+
+func triggerTimeout(t *testing.T, host string, port int) {
+
+	c, err := SingleTargetClient(ConnectionTarget{Address: host, Port: port, MaxOutstandingRequests: 1000, TimeoutMs: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Shutdown()
+
+	var wg sync.WaitGroup
+	var timeoutHit atomic.Bool
+
+	for i := 0; i < 500; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			_, err := c.Set(fmt.Sprintf("key-%d", i), []byte(fmt.Sprintf("value-%d", i)), 0)
+			if err != nil {
+				if errors.Is(err, ErrRequestTimeout) {
+					timeoutHit.Store(true)
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
+	assert.True(t, timeoutHit.Load(), "Expected to hit the timeout")
 }
 
 func simpleGetsAndSets(t *testing.T, host string, port int) {
